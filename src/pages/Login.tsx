@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { signIn } from '@/lib/firebase';
+import { signIn, auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -18,6 +18,25 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is already logged in, redirect to events page
+        navigate('/events');
+      }
+      
+      // Check for remembered email
+      const rememberedEmail = localStorage.getItem('rememberedEmail');
+      if (rememberedEmail) {
+        setEmail(rememberedEmail);
+        setRememberMe(true);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +67,7 @@ const Login = () => {
       
       navigate('/events');
     } catch (error: any) {
+      console.error("Login error:", error);
       let message = "Failed to login";
       if (error.code === 'auth/invalid-credential') {
         message = "Invalid email or password";
@@ -71,11 +91,11 @@ const Login = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <section className="py-16 flex-grow">
-        <div className="container-custom max-w-md mx-auto">
-          <div className="bg-white rounded-xl shadow-lg p-8">
+      <section className="py-8 md:py-16 flex-grow">
+        <div className="container-custom max-w-md mx-auto px-4">
+          <div className="bg-white rounded-xl shadow-lg p-4 md:p-8">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-brand-blue">Welcome Back</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-brand-blue">Welcome Back</h1>
               <p className="text-gray-600 mt-2">Log in to your Event Dekho account</p>
             </div>
             

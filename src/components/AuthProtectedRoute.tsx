@@ -15,12 +15,14 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({ children }) => 
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuthStatus = () => {
+    const checkAuthStatus = async () => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
         if (user) {
           setIsAuthenticated(true);
+          setIsLoading(false);
         } else {
           setIsAuthenticated(false);
+          setIsLoading(false);
           toast({
             title: "Authentication Required",
             description: "You need to log in to access this page.",
@@ -28,7 +30,6 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({ children }) => 
           });
           navigate('/login');
         }
-        setIsLoading(false);
       });
 
       return () => unsubscribe();

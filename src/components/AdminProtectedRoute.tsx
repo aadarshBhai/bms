@@ -15,12 +15,18 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAdminStatus = () => {
+    const checkAdminStatus = async () => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
+        console.log("Admin route check - Current user:", user?.email);
+        
         if (user && isUserAdmin(user.email || '')) {
+          console.log("User is admin:", user.email);
           setIsAdmin(true);
+          setIsLoading(false);
         } else {
+          console.log("User is not admin or not logged in");
           setIsAdmin(false);
+          setIsLoading(false);
           toast({
             title: "Access Denied",
             description: "You don't have permission to access the admin area.",
@@ -28,7 +34,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
           });
           navigate('/');
         }
-        setIsLoading(false);
       });
 
       return () => unsubscribe();

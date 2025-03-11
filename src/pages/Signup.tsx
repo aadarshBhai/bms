@@ -5,19 +5,106 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { signUp } from '@/lib/firebase';
+import { useToast } from "@/hooks/use-toast";
+import { registerUser } from '@/api/users';
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    occupation: 'participant',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({ ...prev, occupation: value }));
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone || !formData.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!agreeToTerms) {
+      toast({
+        title: "Error",
+        description: "You must agree to the Terms of Service and Privacy Policy",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // 1. Register with Firebase Auth
+      const userCredential = await signUp(formData.email, formData.password);
+      
+      // 2. Store additional user data in MongoDB (or simulated for now)
+      await registerUser({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        occupation: formData.occupation,
+        password: formData.password, // This would be hashed on the server
+      });
+      
+      toast({
+        title: "Success",
+        description: "Your account has been created successfully",
+      });
+      
+      navigate('/login');
+    } catch (error: any) {
+      let message = "Failed to create account";
+      
+      if (error.code === 'auth/email-already-in-use') {
+        message = "Email already in use";
+      } else if (error.code === 'auth/invalid-email') {
+        message = "Invalid email address";
+      } else if (error.code === 'auth/weak-password') {
+        message = "Password is too weak";
+      }
+      
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <section className="py-16 flex-grow">
-        <div className="container-custom max-w-2xl mx-auto">
+      <section className="py-8 md:py-16 flex-grow">
+        <div className="container-custom max-w-2xl mx-auto px-4">
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="hidden md:block relative">
@@ -33,20 +120,27 @@ const Signup = () => {
                 </div>
               </div>
               
-              <div className="p-8">
+              <div className="p-4 md:p-8">
                 <div className="text-center mb-6">
                   <h1 className="text-2xl font-bold text-brand-blue">Create An Account</h1>
                   <p className="text-gray-600 mt-1">Register to get started</p>
                 </div>
                 
-                <div className="space-y-4">
+                <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <User className="h-5 w-5 text-gray-400" />
                       </div>
-                      <Input id="name" placeholder="Enter your full name" className="pl-10" />
+                      <Input 
+                        id="name" 
+                        placeholder="Enter your full name" 
+                        className="pl-10" 
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                      />
                     </div>
                   </div>
                   
@@ -56,7 +150,15 @@ const Signup = () => {
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <Mail className="h-5 w-5 text-gray-400" />
                       </div>
-                      <Input id="email" type="email" placeholder="Enter your email" className="pl-10" />
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="Enter your email" 
+                        className="pl-10" 
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                      />
                     </div>
                   </div>
                   
@@ -66,13 +168,23 @@ const Signup = () => {
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <Phone className="h-5 w-5 text-gray-400" />
                       </div>
-                      <Input id="phone" placeholder="Enter your phone number" className="pl-10" />
+                      <Input 
+                        id="phone" 
+                        placeholder="Enter your phone number" 
+                        className="pl-10" 
+                        value={formData.phone}
+                        onChange={handleChange}
+                        required
+                      />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="occupation">Occupation</Label>
-                    <Select>
+                    <Select 
+                      value={formData.occupation} 
+                      onValueChange={handleSelectChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
@@ -96,6 +208,9 @@ const Signup = () => {
                         type={showPassword ? "text" : "password"} 
                         placeholder="Create a password" 
                         className="pl-10 pr-10" 
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                         <button 
@@ -112,11 +227,13 @@ const Signup = () => {
                     </p>
                   </div>
                   
-                  <div className="flex items-center space-x-2 mt-4">
+                  <div className="flex items-start space-x-2 mt-4">
                     <input
                       type="checkbox"
                       id="terms"
-                      className="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+                      className="h-4 w-4 mt-1 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+                      checked={agreeToTerms}
+                      onChange={(e) => setAgreeToTerms(e.target.checked)}
                     />
                     <Label htmlFor="terms" className="text-sm font-normal">
                       I agree to the{' '}
@@ -130,8 +247,12 @@ const Signup = () => {
                     </Label>
                   </div>
                   
-                  <Button className="w-full mt-2 bg-brand-blue hover:bg-brand-purple transition-colors">
-                    Create Account
+                  <Button 
+                    className="w-full mt-2 bg-brand-blue hover:bg-brand-purple transition-colors"
+                    disabled={loading}
+                    type="submit"
+                  >
+                    {loading ? 'Creating Account...' : 'Create Account'}
                   </Button>
                   
                   <div className="relative my-4">
@@ -143,7 +264,7 @@ const Signup = () => {
                     </div>
                   </div>
                   
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" type="button">
                     <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                       <path
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -173,7 +294,7 @@ const Signup = () => {
                       </Link>
                     </p>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>

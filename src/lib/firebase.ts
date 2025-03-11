@@ -23,9 +23,11 @@ try {
 
 const auth = getAuth();
 
-// Add "admin@eventdekho.com" to admin users list
-export const isUserAdmin = (email) => {
-  return email === 'admin@eventdekho.com' || email === 'aadarshgolucky@gmail.com';
+// Add admin emails to this list
+export const isUserAdmin = (email: string) => {
+  const adminEmails = ['admin@eventdekho.com', 'aadarshgolucky@gmail.com'];
+  console.log("Checking if user is admin:", email, "Result:", adminEmails.includes(email.toLowerCase()));
+  return adminEmails.includes(email.toLowerCase());
 };
 
 export const getCurrentUser = () => {
@@ -38,10 +40,12 @@ export const getCurrentUser = () => {
 };
 
 export const signIn = (email: string, password: string) => {
+  console.log("Attempting to sign in with:", email);
   return signInWithEmailAndPassword(auth, email, password);
 };
 
 export const signUp = (email: string, password: string) => {
+  console.log("Attempting to sign up with:", email);
   return createUserWithEmailAndPassword(auth, email, password);
 };
 
