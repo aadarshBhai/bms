@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import AuthProtectedRoute from "./components/AuthProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -22,10 +24,18 @@ const App = () => (
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/events" element={<Events />} />
+        <Route path="/events" element={
+          <AuthProtectedRoute>
+            <Events />
+          </AuthProtectedRoute>
+        } />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={
+          <AdminProtectedRoute>
+            <Admin />
+          </AdminProtectedRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

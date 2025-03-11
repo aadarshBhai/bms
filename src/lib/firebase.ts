@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyA4KBmS0x9O5HU6RniSWG5r-HN7YsxecBI",
@@ -12,9 +12,30 @@ const firebaseConfig = {
   measurementId: "G-6LB5MWJKB5"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Initialize Firebase only once
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (error) {
+  // If an instance already exists, use that one
+  console.log("Firebase already initialized");
+}
+
+const auth = getAuth();
+
+// Add "admin@eventdekho.com" to admin users list
+export const isUserAdmin = (email) => {
+  return email === 'admin@eventdekho.com' || email === 'aadarshgolucky@gmail.com';
+};
+
+export const getCurrentUser = () => {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    }, reject);
+  });
+};
 
 export const signIn = (email: string, password: string) => {
   return signInWithEmailAndPassword(auth, email, password);

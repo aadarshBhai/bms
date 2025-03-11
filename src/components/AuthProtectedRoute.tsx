@@ -1,32 +1,32 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, isUserAdmin } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
-interface AdminProtectedRouteProps {
+interface AuthProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
+const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAdminStatus = () => {
+    const checkAuthStatus = () => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user && isUserAdmin(user.email || '')) {
-          setIsAdmin(true);
+        if (user) {
+          setIsAuthenticated(true);
         } else {
-          setIsAdmin(false);
+          setIsAuthenticated(false);
           toast({
-            title: "Access Denied",
-            description: "You don't have permission to access the admin area.",
+            title: "Authentication Required",
+            description: "You need to log in to access this page.",
             variant: "destructive",
           });
-          navigate('/');
+          navigate('/login');
         }
         setIsLoading(false);
       });
@@ -34,7 +34,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
       return () => unsubscribe();
     };
 
-    checkAdminStatus();
+    checkAuthStatus();
   }, [navigate, toast]);
 
   if (isLoading) {
@@ -45,7 +45,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
     );
   }
 
-  return isAdmin ? <>{children}</> : null;
+  return isAuthenticated ? <>{children}</> : null;
 };
 
-export default AdminProtectedRoute;
+export default AuthProtectedRoute;
