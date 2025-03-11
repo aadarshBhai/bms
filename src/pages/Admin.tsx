@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import Footer from '@/components/Footer';
 import { auth } from '@/lib/firebase';
 import { Event, EventFormData } from '@/models/Event';
 import AdminProtectedRoute from '@/components/AdminProtectedRoute';
+import { getEvents, createEvent, updateEvent, deleteEvent } from '@/api/events';
 
 const Admin = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -52,13 +52,7 @@ const Admin = () => {
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/events');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch events');
-      }
-      
-      const data = await response.json();
+      const data = await getEvents();
       setEvents(data.events);
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -74,18 +68,7 @@ const Admin = () => {
 
   const handleCreateEvent = async () => {
     try {
-      const response = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create event');
-      }
-
+      await createEvent(formData);
       toast({
         title: 'Success',
         description: 'Event created successfully!',
@@ -108,18 +91,7 @@ const Admin = () => {
     if (!currentEvent?._id) return;
 
     try {
-      const response = await fetch(`/api/events/${currentEvent._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update event');
-      }
-
+      await updateEvent(currentEvent._id, formData);
       toast({
         title: 'Success',
         description: 'Event updated successfully!',
@@ -142,14 +114,7 @@ const Admin = () => {
     if (!window.confirm('Are you sure you want to delete this event?')) return;
 
     try {
-      const response = await fetch(`/api/events/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete event');
-      }
-
+      await deleteEvent(id);
       toast({
         title: 'Success',
         description: 'Event deleted successfully!',
