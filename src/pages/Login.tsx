@@ -4,12 +4,68 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { signIn } from '@/lib/firebase';
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      await signIn(email, password);
+      toast({
+        title: "Success",
+        description: "You have successfully logged in",
+      });
+      
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+      
+      navigate('/events');
+    } catch (error: any) {
+      let message = "Failed to login";
+      if (error.code === 'auth/invalid-credential') {
+        message = "Invalid email or password";
+      } else if (error.code === 'auth/user-not-found') {
+        message = "User not found";
+      } else if (error.code === 'auth/wrong-password') {
+        message = "Incorrect password";
+      }
+      
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -23,14 +79,22 @@ const Login = () => {
               <p className="text-gray-600 mt-2">Log in to your Event Dekho account</p>
             </div>
             
-            <div className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
                   </div>
-                  <Input id="email" type="email" placeholder="Enter your email" className="pl-10" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    className="pl-10" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
               
@@ -49,7 +113,10 @@ const Login = () => {
                     id="password" 
                     type={showPassword ? "text" : "password"} 
                     placeholder="Enter your password" 
-                    className="pl-10 pr-10" 
+                    className="pl-10 pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     <button 
@@ -67,13 +134,19 @@ const Login = () => {
                 <input
                   type="checkbox"
                   id="remember"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
                 />
                 <Label htmlFor="remember" className="text-sm font-normal">Remember me</Label>
               </div>
               
-              <Button className="w-full bg-brand-blue hover:bg-brand-purple transition-colors">
-                Sign In
+              <Button 
+                type="submit" 
+                className="w-full bg-brand-blue hover:bg-brand-purple transition-colors"
+                disabled={loading}
+              >
+                {loading ? 'Signing In...' : 'Sign In'}
               </Button>
               
               <div className="relative my-6">
@@ -85,7 +158,7 @@ const Login = () => {
                 </div>
               </div>
               
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" type="button">
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -115,7 +188,7 @@ const Login = () => {
                   </Link>
                 </p>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </section>
